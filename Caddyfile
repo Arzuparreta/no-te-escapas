@@ -1,0 +1,36 @@
+yourdomain.com {
+    reverse_proxy localhost:3000
+
+    # Enable HTTPS (automatic via Let's Encrypt)
+    tls your-email@example.com
+
+    # Security headers
+    header {
+        # HSTS
+        Strict-Transport-Security "max-age=31536000; includeSubDomains" preload
+
+        # XSS protection
+        X-XSS-Protection "1; mode=block"
+
+        # Clickjacking protection
+        X-Frame-Options "DENY"
+
+        # MIME type sniffing protection
+        X-Content-Type-Options "nosniff"
+
+        # Referrer policy
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Basic rate limiting
+    ratelimit {
+        zone app {
+            rate 100
+            burst 150
+        }
+        key {remote_host}
+        handler {
+            source
+        }
+    }
+}

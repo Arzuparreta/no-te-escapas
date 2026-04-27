@@ -1,0 +1,152 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [pgvector(map: "vector")]
+}
+
+enum ContactSource {
+  MANUAL
+  GOOGLE
+  ICLOUD
+  OUTLOOK
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+model Contact {
+  id            String   @id @default(cuid())
+  name          String
+  emails        String[]
+  phones        String[]
+  role          String?  // "label", "booking_agent", "venue", "press", "promoter" etc.
+  artistContext String?  // which artist this contact relates to
+  source        ContactSource @default(MANUAL)
+  externalId    String?  // ID in source system (Google, iCloud)
+  lastSyncedAt  DateTime?
+  raw           Json?    // full payload from sync source
+  embedding     Unsupported("vector(1536)")?  // for semantic search
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  calls         Call[]
+  mailThreads   MailThread[]
+  followUps     FollowUp[]
+
+  @@index([externalId, source])
+  @@index([updatedAt])
+}
+
+model Call {
+  id              String    @id @default(cuid())
+  contactId       String
+  contact         Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  direction       Direction
+  startedAt       DateTime
+  durationSeconds Int?
+  reason          String?   // AI-extracted or manually entered
+  conclusion      String?   // AI-extracted or manually entered
+  sentiment       String?   // AI-inferred: "positive", "neutral", "difficult"
+  rawTranscript   String?   // if voice memo was used
+  embedding       Unsupported("vector(1536)")?   // for semantic search
+  enrichedAt      DateTime? // null = pending AI enrichment
+  createdAt       DateTime  @default(now())
+
+  followUp        FollowUp?
+
+  @@index([contactId, startedAt])
+}
+
+model FollowUp {
+  id            String    @id @default(cuid())
+  contactId     String
+  contact       Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  callId        String?   @unique
+  call          Call?     @relation(fields: [callId], references: [id], onDelete: SetNull)
+  scheduledAt   DateTime
+  completed     Boolean   @default(false)
+  completedAt   DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+
+  @@index([scheduledAt, completed])
+}
+
+model MailThread {
+  id            String   @id @default(cuid())
+  contactId     String?
+  contact       Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  gmailThreadId String   @unique
+  subject       String
+  snippet       String?   // last message preview
+  lastMessageAt DateTime
+  messageCount  Int       @default(1)
+  labelIds      String[]
+  needsReply    Boolean   @default(false) // AI-inferred
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([contactId, lastMessageAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Credentials {
+  id       String @id @default(cuid())
+  email    String @unique
+  password String
+}
