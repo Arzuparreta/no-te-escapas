@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:e2e": "playwright test",
+    "seed": "tsx prisma/seed.ts",
     "db:generate": "npx prisma generate",
     "db:migrate": "npx prisma migrate dev",
     "db:push": "npx prisma db push",
