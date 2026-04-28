@@ -133,6 +133,8 @@ model User {
   email         String?   @unique
   emailVerified DateTime?
   image         String?
+  passwordHash  String?    // NEW: bcrypt hash for credentials auth
+  role          String    @default("user")  // NEW: "admin" or "user"
   accounts      Account[]
   sessions      Session[]
 }
@@ -145,8 +147,4 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-model Credentials {
-  id       String @id @default(cuid())
-  email    String @unique
-  password String
-}
+

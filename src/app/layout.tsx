@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import Link from 'next/link'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -10,11 +12,14 @@ export const metadata: Metadata = {
   description: "Communications CRM for music industry managers",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await getServerSession(authOptions)
+  const isAdmin = (session?.user as any)?.role === 'admin'
+
   return (
     <html lang="en">
       <body className={inter.className}>
@@ -40,6 +45,11 @@ export default function RootLayout({
                     <Link href="/calls/new" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
                       Log Call
                     </Link>
+                    {isAdmin && (
+                      <Link href="/settings/users" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+                        Users
+                      </Link>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -69,6 +79,11 @@ export default function RootLayout({
               <Link href="/calls/new" className="text-xs text-gray-600 hover:text-gray-900 px-2 py-1">
                 Call
               </Link>
+              {isAdmin && (
+                <Link href="/settings/users" className="text-xs text-gray-600 hover:text-gray-900 px-2 py-1">
+                  Users
+                </Link>
+              )}
             </div>
           </div>
 

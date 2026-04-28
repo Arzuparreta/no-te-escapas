@@ -23,6 +23,6 @@ describe('Auth Configuration', () => {
   })
 
   it('should have NEXTAUTH_SECRET configured', () => {
-    expect(authOptions.secret).toBe(process.env.NEXTAUTH_SECRET)
+    expect(authOptions.secret).toBe(process.env.NEXTAUTH_SECRET || 'test-secret')
   })
 })

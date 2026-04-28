@@ -1,8 +1,11 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { compare } from 'bcrypt'
+import { PrismaAdapter } from '@auth/prisma-adapter'
+import { prisma } from '@/lib/db'
 
 export const authOptions: NextAuthOptions = {
+  adapter: PrismaAdapter(prisma),
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -11,8 +14,6 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        console.log('AUTHORIZE CALLED:', credentials?.email)
-        
         if (!credentials?.email || !credentials?.password) {
           return null
         }
@@ -20,33 +21,24 @@ export const authOptions: NextAuthOptions = {
         const email = credentials.email.trim()
         const password = credentials.password.trim()
 
-        // Check credentials against environment variables
-        const userEmail = process.env.APP_USER_EMAIL
-        const userPasswordHash = process.env.APP_USER_PASSWORD_HASH
+        // Find user in database
+        const user = await prisma.user.findUnique({
+          where: { email }
+        })
 
-        if (email !== userEmail) {
-          console.log('Email mismatch:', email, '!==', userEmail)
+        if (!user || !user.passwordHash) {
           return null
         }
 
-        if (!userPasswordHash) {
-          console.error('APP_USER_PASSWORD_HASH not set in environment')
-          return null
-        }
+        const isValid = await compare(password, user.passwordHash)
 
-        try {
-          const isValid = await compare(password, userPasswordHash)
-          console.log('Password valid:', isValid)
-
-          if (isValid) {
-            return {
-              id: '1',
-              email: email,
-              name: 'Music Manager',
-            }
+        if (isValid) {
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
           }
-        } catch (error) {
-          console.error('Auth compare error:', error)
         }
 
         return null
@@ -56,5 +48,20 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: 'jwt' as const },
   secret: process.env.NEXTAUTH_SECRET || 'test-secret',
   pages: { signIn: '/auth/signin' },
-  debug: true,
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.role = (user as any).role
+      }
+      return token
+    },
+    async session({ session, token }) {
+      if (token && session.user) {
+        (session.user as any).id = token.id
+        (session.user as any).role = token.role
+      }
+      return session
+    },
+  },
 }

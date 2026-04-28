@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
-import HomePage from './page'
+import HomePage from './(ui)/page'
 
 describe('HomePage', () => {
   it('renders the page title', () => {
