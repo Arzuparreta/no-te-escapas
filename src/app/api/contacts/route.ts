@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { z } from 'zod'
+import { getCardDAVService } from '@/lib/services/carddav'
 
 const createContactSchema = z.object({
   name: z.string().min(1),
@@ -61,11 +62,40 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createContactSchema.parse(body)
 
+    // Check if iCloud sync is enabled
+    const settings = await prisma.appSettings.findMany({
+      where: { key: 'create_on_icloud' },
+    })
+    const createOnIcloud = settings[0]?.value === 'true'
+
+    let externalId: string | undefined
+    let source: 'MANUAL' | 'ICLOUD' = 'MANUAL'
+
+    if (createOnIcloud) {
+      const carddav = await getCardDAVService()
+      if (carddav) {
+        try {
+          externalId = await carddav.createContact({
+            name: validatedData.name,
+            emails: validatedData.emails || [],
+            phones: validatedData.phones || [],
+          })
+          source = 'ICLOUD'
+        } catch (err) {
+          console.error('Failed to create contact on iCloud:', err)
+          // Continue with local creation
+        }
+      }
+    }
+
     const contact = await prisma.contact.create({
       data: {
         ...validatedData,
         emails: validatedData.emails || [],
         phones: validatedData.phones || [],
+        source,
+        externalId,
+        lastSyncedAt: externalId ? new Date() : undefined,
       },
     })
 

@@ -16,7 +16,7 @@ function SignInForm() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const callbackUrl = searchParams.get('callbackUrl') || '/'
+  const callbackUrl = searchParams?.get('callbackUrl') || '/'
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -38,7 +38,7 @@ function SignInForm() {
         router.push(callbackUrl)
         router.refresh()
       }
-    } catch (_err) {
+    } catch (err: unknown) {
       setError('An error occurred. Please try again.')
       setLoading(false)
     }

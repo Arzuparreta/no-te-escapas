@@ -13,6 +13,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/hooks/use-toast'
 
 import { Suspense } from 'react'
+import { Calendar } from 'lucide-react'
+import { format } from 'date-fns'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,8 +31,8 @@ function NewFollowUpForm() {
   const [loading, setLoading] = useState(true)
 
   const [formData, setFormData] = useState({
-    contactId: searchParams.get('contactId') || '',
-    callId: searchParams.get('callId') || '',
+    contactId: searchParams?.get('contactId') || '',
+    callId: searchParams?.get('callId') || '',
     scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     notes: '',
   })
@@ -45,8 +47,8 @@ function NewFollowUpForm() {
       if (!response.ok) throw new Error('Failed to fetch contacts')
       const data = await response.json()
       setContacts(data.data || [])
-    } catch (_err) {
-      toast({ title: 'Error', description: 'Failed to load contacts', variant: 'destructive' })
+    } catch (err: unknown) {
+      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to load contacts', variant: 'destructive' })
     } finally {
       setLoading(false)
     }
@@ -74,7 +76,7 @@ function NewFollowUpForm() {
       toast({ title: 'Success', description: 'Follow-up scheduled' })
       router.push('/follow-ups')
       router.refresh()
-    } catch (_err) {
+    } catch (err: unknown) {
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to create follow-up',

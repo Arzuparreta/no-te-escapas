@@ -148,4 +148,13 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
+model AppSettings {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  value           String
+  updatedAt       DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
 

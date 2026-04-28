@@ -48,10 +48,10 @@ export default function NewCallPage() {
       if (!response.ok) throw new Error('Failed to fetch contacts')
       const data = await response.json()
       setContacts(data.data || [])
-    } catch (_err) {
+    } catch (err: unknown) {
       toast({
         title: 'Error',
-        description: 'Failed to load contacts',
+        description: err instanceof Error ? err.message : 'Failed to load contacts',
         variant: 'destructive',
       })
     } finally {
@@ -97,7 +97,7 @@ export default function NewCallPage() {
 
       router.push(`/contacts/${data.data.contact.id}`)
       router.refresh()
-    } catch (_err) {
+    } catch (err: unknown) {
       toast({
         title: 'Error',
         description: err instanceof Error ? err.message : 'Failed to log call',
