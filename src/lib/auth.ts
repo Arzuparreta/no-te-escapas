@@ -1,7 +1,6 @@
 import { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { compare } from 'bcrypt'
-import { prisma } from './db'
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -12,50 +11,50 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
+        console.log('AUTHORIZE CALLED:', credentials?.email)
+        
         if (!credentials?.email || !credentials?.password) {
           return null
         }
 
-        // Trim credentials to avoid whitespace issues
         const email = credentials.email.trim()
         const password = credentials.password.trim()
 
-        // For MVP: Check credentials against hardcoded values from env
-        // In production, you would use a proper User model
+        // Check credentials against environment variables
         const userEmail = process.env.APP_USER_EMAIL
         const userPasswordHash = process.env.APP_USER_PASSWORD_HASH
 
         if (email !== userEmail) {
+          console.log('Email mismatch:', email, '!==', userEmail)
+          return null
+        }
+
+        if (!userPasswordHash) {
+          console.error('APP_USER_PASSWORD_HASH not set in environment')
           return null
         }
 
         try {
-          const isValid = await compare(password, userPasswordHash || '')
-          console.log('Auth debug - Email match:', email === userEmail)
-          console.log('Auth debug - Password valid:', isValid)
-          console.log('Auth debug - Hash exists:', !!userPasswordHash)
+          const isValid = await compare(password, userPasswordHash)
+          console.log('Password valid:', isValid)
 
-          if (!isValid) {
-            return null
+          if (isValid) {
+            return {
+              id: '1',
+              email: email,
+              name: 'Music Manager',
+            }
           }
         } catch (error) {
-          console.error('Auth debug - Compare error:', error)
-          return null
+          console.error('Auth compare error:', error)
         }
 
-        return {
-          id: '1',
-          email: credentials.email,
-          name: 'Music Manager',
-        }
+        return null
       }
     })
   ],
-  session: {
-    strategy: 'jwt' as const,
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-  pages: {
-    signIn: '/auth/signin',
-  },
+  session: { strategy: 'jwt' as const },
+  secret: process.env.NEXTAUTH_SECRET || 'test-secret',
+  pages: { signIn: '/auth/signin' },
+  debug: true,
 }
