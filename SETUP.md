@@ -234,7 +234,7 @@ APP_USER_PASSWORD_HASH=$2b$10$abcdefghijklmnopqrstuvwxyz0123456789ABCDEF
 2. Create a new project
 3. Enable Gmail API
 4. Create OAuth 2.0 credentials
-5. Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+5. Add authorized redirect URI: `http://localhost:3003/api/auth/callback/google`
 6. Copy Client ID and Secret to `.env`
 
 **Optional: iCloud (for Contact Sync)**
@@ -256,7 +256,7 @@ cat .env | grep -E "(NEXTAUTH|APP_USER|DATABASE_URL)"
 **Expected:**
 ```
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/music_manager_crm
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3003
 NEXTAUTH_SECRET=your-secret-here
 APP_USER_EMAIL=admin@yourdomain.com
 APP_USER_PASSWORD_HASH=$2b$10$...
@@ -374,7 +374,7 @@ npm run dev
 ```
 
 **Access Application:**
-- Open http://localhost:3000
+- Open http://localhost:3003
 - Should redirect to login page
 
 ### Make Changes
@@ -508,7 +508,7 @@ server {
     server_name crm.example.com;
 
     location / {
-        proxy_pass http://localhost:3000;
+        proxy_pass http://localhost:3003;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -522,7 +522,7 @@ server {
 
 ```
 crm.example.com {
-    reverse_proxy localhost:3000
+    reverse_proxy localhost:3003
 }
 ```
 
@@ -589,13 +589,13 @@ npm install
 
 ### Port Already in Use
 
-**Error:** `listen EADDRINUSE: address already in use 0.0.0.0:3000`
+**Error:** `listen EADDRINUSE: address already in use 0.0.0.0:3003`
 
 **Solutions:**
 
 1. Find process:
    ```bash
-   lsof -ti:3000
+   lsof -ti:3003
    ```
 
 2. Kill it:
@@ -605,7 +605,7 @@ npm install
 
 3. Or use different port:
    ```bash
-   npm run dev -- -p 3001
+   npm run dev -- -p 3004
    ```
 
 ### Tests Failing
@@ -785,7 +785,7 @@ docker-compose logs -f
 
 ```bash
 # Check if app is running
-curl http://localhost:3000/api/health
+curl http://localhost:3003/api/health
 
 # Check database
 npx prisma db execute --file /dev/stdin <<<'SELECT 1'

@@ -798,7 +798,7 @@ Update documentation to reflect new setup:
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/music_manager_crm
 
 # NextAuth
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3003
 NEXTAUTH_SECRET=your-secret-here
 
 # Default admin user is created via seed script

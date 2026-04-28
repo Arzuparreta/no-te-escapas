@@ -37,10 +37,10 @@ npm run db:migrate
 npm run dev
 ```
 
-Open **http://localhost:3000** in your browser.
+Open **http://localhost:3003** in your browser.
 
 ### Development Server
-- `npm run dev` — Start Next.js dev server (port 3000)
+- `npm run dev` — Start Next.js dev server (port 3003)
 - `npm run build` — Build for production
 - `npm start` — Start production server
 - `npm run lint` — Run ESLint
@@ -154,7 +154,7 @@ scripts/
 # Required
 APP_USER_EMAIL=admin@dorantes.es
 APP_USER_PASSWORD_HASH=<bcrypt-hash>
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3003
 NEXTAUTH_SECRET=<strong-secret>
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/music_manager_crm
 
@@ -277,7 +277,7 @@ node scripts/generate-hash.js
 
 ### Port Conflicts
 ```bash
-lsof -ti:3000    # Find process
+lsof -ti:3003    # Find process
 kill -9 <PID>    # Kill it
 # Or use different port: npm run dev -- -p 3001
 ```

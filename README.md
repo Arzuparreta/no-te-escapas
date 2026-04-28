@@ -30,7 +30,7 @@ cat > .env << 'EOF'
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/music_manager_crm
 
 # NextAuth
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3003
 NEXTAUTH_SECRET=your-secret-key-here-change-this-in-production
 
 # Credentials Auth (for single user)
@@ -114,7 +114,7 @@ npx prisma migrate dev
 npm run dev
 ```
 
-Open **http://localhost:3000** in your browser.
+Open **http://localhost:3003** in your browser.
 
 #### 7. Login
 
@@ -455,14 +455,14 @@ node scripts/generate-hash.js
 ### Port Already in Use
 
 ```bash
-# Find process using port 3000
-lsof -ti:3000
+# Find process using port 3003
+lsof -ti:3003
 
 # Kill it
 kill -9 <PID>
 
 # Or use different port
-npm run dev -- -p 3001
+npm run dev -- -p 3004
 ```
 
 ### Tests Failing
