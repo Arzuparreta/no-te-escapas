@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { format, isToday, isPast, parseISO } from 'date-fns'
 import { formatDistanceToNow } from 'date-fns'
 
+export const dynamic = 'force-dynamic'
+
 interface FollowUp {
   id: string
   scheduledAt: string
