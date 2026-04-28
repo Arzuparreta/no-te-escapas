@@ -16,18 +16,30 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
+        // Trim credentials to avoid whitespace issues
+        const email = credentials.email.trim()
+        const password = credentials.password.trim()
+
         // For MVP: Check credentials against hardcoded values from env
         // In production, you would use a proper User model
         const userEmail = process.env.APP_USER_EMAIL
         const userPasswordHash = process.env.APP_USER_PASSWORD_HASH
 
-        if (credentials.email !== userEmail) {
+        if (email !== userEmail) {
           return null
         }
 
-        const isValid = await compare(credentials.password, userPasswordHash || '')
+        try {
+          const isValid = await compare(password, userPasswordHash || '')
+          console.log('Auth debug - Email match:', email === userEmail)
+          console.log('Auth debug - Password valid:', isValid)
+          console.log('Auth debug - Hash exists:', !!userPasswordHash)
 
-        if (!isValid) {
+          if (!isValid) {
+            return null
+          }
+        } catch (error) {
+          console.error('Auth debug - Compare error:', error)
           return null
         }
 

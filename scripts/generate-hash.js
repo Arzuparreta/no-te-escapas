@@ -8,7 +8,7 @@ if (!password) {
   process.exit(1)
 }
 
-const saltRounds = 10
+const saltRounds = 12
 const hash = await bcrypt.hash(password, saltRounds)
 console.log('Bcrypt hash:', hash)
 console.log('Add this to your .env file as APP_USER_PASSWORD_HASH=')
