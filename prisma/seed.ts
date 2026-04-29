@@ -4,20 +4,25 @@ import { hash } from 'bcrypt'
 const prisma = new PrismaClient()
 
 async function main() {
-  const passwordHash = await hash('password', 12)
+  // Only create default admin if NO users exist
+  const userCount = await prisma.user.count()
   
-  await prisma.user.upsert({
-    where: { email: 'admin@email.com' },
-    update: {},
-    create: {
-      email: 'admin@email.com',
-      name: 'Admin',
-      passwordHash: passwordHash,
-      role: 'admin',
-    },
-  })
-  
-  console.log('✅ Default admin user created: admin@email.com / password')
+  if (userCount === 0) {
+    const passwordHash = await hash('password', 12)
+    
+    await prisma.user.create({
+      data: {
+        email: 'admin@email.com',
+        name: 'Admin',
+        passwordHash: passwordHash,
+        role: 'admin',
+      },
+    })
+    
+    console.log('✅ Default admin user created: admin@email.com / password')
+  } else {
+    console.log(`ℹ️  Users already exist (${userCount} users), skipping seed`)
+  }
 }
 
 main()
