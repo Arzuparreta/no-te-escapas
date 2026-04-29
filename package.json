@@ -17,7 +17,8 @@
     "db:generate": "npx prisma generate",
     "db:migrate": "npx prisma migrate dev",
     "db:push": "npx prisma db push",
-    "db:studio": "npx prisma studio"
+    "db:studio": "npx prisma studio",
+    "db:reset": "bash scripts/reset-db.sh"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.2",

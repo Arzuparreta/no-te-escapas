@@ -56,7 +56,11 @@ npx prisma generate
 
 # Run migrations
 echo "Running database migrations..."
-npx prisma migrate dev --name init
+npx prisma migrate dev --name init --skip-seed
+
+# Run seed to create admin user
+echo "Running database seed..."
+npx prisma db seed
 
 echo ""
 echo "=== Setup Complete! ==="
@@ -64,10 +68,9 @@ echo ""
 echo "To start the development server, run:"
 echo "  npm run dev"
 echo ""
-echo "To create an admin user, set APP_USER_PASSWORD_HASH in .env"
-echo "  npx bcrypt your-password"
-echo ""
-echo "Then visit: http://localhost:3000"
+echo "Default admin credentials:"
+echo "  Email: admin@email.com"
+echo "  Password: password"
 echo ""
 echo "To stop the database, run:"
 echo "  docker-compose down"
