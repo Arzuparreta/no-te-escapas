@@ -22,6 +22,23 @@ interface Contact {
   name: string
 }
 
+type ZodIssueLike = { path: (string | number)[]; message: string }
+
+function describeApiError(body: {
+  error?: string
+  details?: ZodIssueLike[]
+}) {
+  if (body.details?.length) {
+    return body.details
+      .map(
+        (i) =>
+          `${i.path.filter((p) => p !== undefined && p !== '').join('.') || 'field'}: ${i.message}`
+      )
+      .join(' · ')
+  }
+  return body.error ?? 'Request failed'
+}
+
 function NewFollowUpForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -31,7 +48,7 @@ function NewFollowUpForm() {
 
   const [formData, setFormData] = useState({
     contactId: searchParams?.get('contactId') || '',
-    callId: searchParams?.get('callId') || '',
+    callId: searchParams?.get('callId')?.trim() || '',
     scheduledAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16),
     notes: '',
   })
@@ -47,44 +64,75 @@ function NewFollowUpForm() {
       const data = await response.json()
       setContacts(data.data || [])
     } catch (err: unknown) {
-      toast({ title: 'Error', description: err instanceof Error ? err.message : 'Failed to load contacts', variant: 'destructive' })
+      toast({
+        title: 'Error',
+        description: err instanceof Error ? err.message : 'Failed to load contacts',
+        variant: 'destructive',
+      })
     } finally {
       setLoading(false)
     }
   }
 
+  const scheduledDate = new Date(formData.scheduledAt)
+  const dateValid = !Number.isNaN(scheduledDate.getTime())
+  const canSubmit = Boolean(formData.contactId) && dateValid
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (!formData.contactId) {
+      toast({
+        title: 'Contact required',
+        description: 'Choose who this follow-up is for.',
+        variant: 'destructive',
+      })
+      return
+    }
+    if (!dateValid) {
+      toast({
+        title: 'Invalid date',
+        description: 'Pick a valid date and time.',
+        variant: 'destructive',
+      })
+      return
+    }
 
     try {
       const response = await fetch('/api/follow-ups', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...formData,
-          scheduledAt: new Date(formData.scheduledAt).toISOString(),
-          callId: formData.callId || undefined,
+          contactId: formData.contactId,
+          scheduledAt: scheduledDate.toISOString(),
+          notes: formData.notes || undefined,
+          callId: formData.callId.trim() || undefined,
         }),
       })
 
+      const payload = await response.json().catch(() => ({}))
+
       if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to create follow-up')
+        toast({
+          title: 'Could not schedule',
+          description: describeApiError(payload),
+          variant: 'destructive',
+        })
+        return
       }
 
       toast({ title: 'Success', description: 'Follow-up scheduled' })
       router.push('/follow-ups')
       router.refresh()
-    } catch (err: unknown) {
+    } catch {
       toast({
         title: 'Error',
-        description: err instanceof Error ? err.message : 'Failed to create follow-up',
+        description: 'Failed to create follow-up',
         variant: 'destructive',
       })
     }
   }
 
-  const selectedContact = contacts.find(c => c.id === formData.contactId)
+  const selectedContact = contacts.find((c) => c.id === formData.contactId)
 
   if (loading) {
     return (
@@ -110,8 +158,15 @@ function NewFollowUpForm() {
             Back
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold tracking-tight">Schedule Follow-up</h1>
-        <p className="text-sm text-muted-foreground mt-1">Set a reminder to follow up with a contact</p>
+        <h1 className="text-2xl font-bold tracking-tight">Schedule follow-up</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Reminder for a contact. You do not need to log a call first—linking a call is optional.
+        </p>
+        {formData.callId ? (
+          <p className="text-xs text-muted-foreground mt-2">
+            This follow-up will be tied to call <span className="font-mono">{formData.callId}</span>.
+          </p>
+        ) : null}
       </div>
 
       <Card>
@@ -120,8 +175,10 @@ function NewFollowUpForm() {
             <div>
               <Label htmlFor="contactId">Contact *</Label>
               <Select
-                value={formData.contactId}
-                onValueChange={(value) => setFormData(prev => ({ ...prev, contactId: value }))}
+                value={formData.contactId || undefined}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({ ...prev, contactId: value }))
+                }
               >
                 <SelectTrigger id="contactId">
                   <SelectValue placeholder="Select a contact" />
@@ -140,14 +197,20 @@ function NewFollowUpForm() {
             </div>
 
             <div>
-              <Label htmlFor="scheduledAt">Due Date & Time *</Label>
+              <Label htmlFor="scheduledAt">Due date and time *</Label>
               <Input
                 id="scheduledAt"
                 type="datetime-local"
                 value={formData.scheduledAt}
-                onChange={(e) => setFormData(prev => ({ ...prev, scheduledAt: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, scheduledAt: e.target.value }))
+                }
                 min={format(new Date(), "yyyy-MM-dd'T'HH:mm")}
+                aria-invalid={!dateValid}
               />
+              {!dateValid && (
+                <p className="text-xs text-destructive mt-1">Enter a valid date and time.</p>
+              )}
             </div>
 
             <div>
@@ -156,7 +219,9 @@ function NewFollowUpForm() {
                 id="notes"
                 placeholder="What needs to be discussed?"
                 value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, notes: e.target.value }))
+                }
                 rows={3}
               />
             </div>
@@ -169,7 +234,7 @@ function NewFollowUpForm() {
             )}
 
             <div className="flex gap-3 pt-2">
-              <Button type="submit" className="flex-1 sm:flex-none">
+              <Button type="submit" className="flex-1 sm:flex-none" disabled={!canSubmit}>
                 <CheckCircle2 className="h-4 w-4 mr-2" />
                 Schedule
               </Button>

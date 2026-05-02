@@ -1,15 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { prismaErrorResponse } from '@/lib/api-errors'
 import { z } from 'zod'
 
-const createCallSchema = z.object({
-  contactId: z.string().cuid(),
-  direction: z.enum(['INBOUND', 'OUTBOUND']),
-  startedAt: z.string().datetime(),
-  durationSeconds: z.number().optional(),
-  reason: z.string().optional(),
-  conclusion: z.string().optional(),
-})
+const createCallSchema = z
+  .object({
+    contactId: z.string().cuid(),
+    direction: z.enum(['INBOUND', 'OUTBOUND']),
+    startedAt: z.coerce.date().refine((d) => !Number.isNaN(d.getTime()), {
+      message: 'Invalid startedAt',
+    }),
+    durationSeconds: z.number().optional(),
+    reason: z.string().optional(),
+    conclusion: z.string().optional(),
+    createFollowUp: z.boolean().optional(),
+    followUpDate: z.preprocess((v) => {
+      if (v === '' || v == null) return undefined
+      return v
+    }, z.coerce.date().optional()),
+    followUpNotes: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.createFollowUp) {
+      if (
+        !data.followUpDate ||
+        Number.isNaN(data.followUpDate.getTime())
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message:
+            'followUpDate is required and must be valid when scheduling a follow-up',
+          path: ['followUpDate'],
+        })
+      }
+    }
+  })
 
 export async function GET(request: NextRequest) {
   try {
@@ -44,24 +69,46 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const validatedData = createCallSchema.parse(body)
 
+    const contact = await prisma.contact.findUnique({
+      where: { id: validatedData.contactId },
+    })
+    if (!contact) {
+      return NextResponse.json({ error: 'Contact not found' }, { status: 400 })
+    }
+
+    const { createFollowUp, followUpDate, followUpNotes, ...callFields } =
+      validatedData
+
     const call = await prisma.call.create({
       data: {
-        ...validatedData,
-        startedAt: new Date(validatedData.startedAt),
+        contactId: callFields.contactId,
+        direction: callFields.direction,
+        startedAt: callFields.startedAt,
+        durationSeconds: callFields.durationSeconds,
+        reason: callFields.reason,
+        conclusion: callFields.conclusion,
       },
       include: {
         contact: true,
       },
     })
 
-    // Create follow-up if requested
-    if (body.createFollowUp && body.followUpDate) {
+    if (createFollowUp && followUpDate) {
+      const existing = await prisma.followUp.findUnique({
+        where: { callId: call.id },
+      })
+      if (existing) {
+        return NextResponse.json(
+          { error: 'A follow-up is already linked to this call' },
+          { status: 409 }
+        )
+      }
       await prisma.followUp.create({
         data: {
           contactId: validatedData.contactId,
           callId: call.id,
-          scheduledAt: new Date(body.followUpDate),
-          notes: body.followUpNotes || '',
+          scheduledAt: followUpDate,
+          notes: followUpNotes ?? '',
         },
       })
     }
@@ -71,13 +118,12 @@ export async function POST(request: NextRequest) {
     console.error('Error creating call:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid data', details: error.errors },
+        { error: 'Invalid data', details: error.issues },
         { status: 400 }
       )
     }
-    return NextResponse.json(
-      { error: 'Failed to create call' },
-      { status: 500 }
-    )
+    const pr = prismaErrorResponse(error)
+    if (pr) return pr
+    return NextResponse.json({ error: 'Failed to create call' }, { status: 500 })
   }
 }

@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Clock, User, CheckCircle2 } from 'lucide-react'
+import { ArrowLeft, User, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -125,11 +125,9 @@ export default function NewCallPage() {
   return (
     <div className="p-6 lg:p-8 space-y-6">
       <div>
-        <Button variant="ghost" asChild size="sm" className="mb-2">
-          <a href="javascript:history.back()">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
-          </a>
+        <Button variant="ghost" size="sm" className="mb-2" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back
         </Button>
         <h1 className="text-2xl font-bold tracking-tight">Log a Call</h1>
         <p className="text-sm text-muted-foreground mt-1">Record details about your conversation</p>

@@ -11,21 +11,31 @@ const updateContactSchema = z.object({
   notes: z.string().optional(),
 })
 
+function clampTake(raw: string | null, defaultVal: number) {
+  const n = parseInt(raw ?? '', 10)
+  if (Number.isNaN(n)) return defaultVal
+  return Math.min(500, Math.max(1, n))
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const { searchParams } = new URL(request.url)
+    const callsTake = clampTake(searchParams.get('callsTake'), 10)
+    const mailThreadsTake = clampTake(searchParams.get('mailThreadsTake'), 10)
+
     const contact = await prisma.contact.findUnique({
       where: { id: params.id },
       include: {
         calls: {
           orderBy: { startedAt: 'desc' },
-          take: 10,
+          take: callsTake,
         },
         mailThreads: {
           orderBy: { lastMessageAt: 'desc' },
-          take: 10,
+          take: mailThreadsTake,
         },
         followUps: {
           orderBy: { scheduledAt: 'asc' },
@@ -68,7 +78,7 @@ export async function PUT(
     console.error('Error updating contact:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid data', details: error.errors },
+        { error: 'Invalid data', details: error.issues },
         { status: 400 }
       )
     }

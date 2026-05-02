@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     console.error('Error creating contact:', error)
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Invalid data', details: error.errors },
+        { error: 'Invalid data', details: error.issues },
         { status: 400 }
       )
     }
